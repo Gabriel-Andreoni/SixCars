@@ -1,6 +1,10 @@
 import { Form } from "../components/form";
+
 import {auth} from '@clerk/nextjs/server';
 import { redirect } from "next/navigation";
+
+import { saveCarOnDB } from "../actions/saveCar";
+import { getFormData } from "../actions/getFormData";
 
 export default async function DashboardPage() {
     const {userId} = await auth();
@@ -9,41 +13,20 @@ export default async function DashboardPage() {
         redirect('/');
     }
 
-    const handleForm = async (formData:FormData) => {
+    const handleData = async (formData:FormData) => {
         "use server";
 
-        const carName = formData.get('car-name');
-        const carDescription = formData.get('car-description');
-        const carPrice = formData.get('car-price');
-        const carYear = formData.get('car-year');
-        const carKm = formData.get('car-km');
-        const carLocation = formData.get('location');
-        const carThumb = formData.get('car-thumb');
-
-        const data = new FormData();
-        data.append('carName', carName as string);
-        data.append('carDescription', carDescription as string);
-        data.append('carPrice', carPrice as string);
-        data.append('carYear', carYear as string);
-        data.append('carKm', carKm as string);
-        data.append('carLocation', carLocation as string);
-        data.append('carThumb', carThumb as Blob);
-
-
-        fetch('http://localhost:3000/api/cars', {
-            method: 'POST',
-            body: data,
-        })
-        .then(response => console.log(response.status))
+        const car = getFormData(formData);
     
+        saveCarOnDB(car);
     }
 
     return (
-        <div className="w-full h-[calc(100vh-96px)] bg-blue-500">
-            <div className="w-7xl h-full flex justify-center items-center">
+        <div className="w-full h-auto ">
+            <div className="w-7xl h-full flex justify-center">
             <Form
-                className="w-full h-96 mx-20 p-4 flex flex-wrap justify-between items-start border rounded-lg border-white"
-                handleForm={handleForm}
+                className="w-full mt-4 mx-20 p-4 flex flex-wrap gap-8 items-start border rounded-sm border-white border-b-transparent"
+                handleForm={handleData}
             />
             </div>
         </div>

@@ -1,21 +1,12 @@
 import db from "../../../db";
+import { Car } from "../../actions/getFormData";
 
-export interface CarsProps {
-    id: number,
-    name: string,
-    description: string,
-    price: string,
-    year: string,
-    km: string,
-    location: string,
-    thumb: Buffer | null,
-}
 
 export async function GET() {
     try {
         const cars = db.prepare("SELECT * FROM cars").all();
 
-        const formattedCars: CarsProps[] = cars.map((car: any) => ({
+        const formattedCars: Car[] = cars.map((car: any) => ({
             ...car,
             thumb: car.thumb
                 ? `data:image/png;base64,${Buffer.from(car.thumb).toString("base64")}`
@@ -37,34 +28,75 @@ export async function GET() {
     }
 }
 
+export const getFormData = (formData: FormData): Car => {
+    return {
+        name: formData.get('car-name')?.toString() ?? '',
+        description: formData.get('car-description')?.toString() ?? '',
+        price: formData.get('car-price')?.toString() ?? '',
+        year: formData.get('car-year')?.toString() ?? '',
+        km: formData.get('car-km')?.toString() ?? '',
+        location: formData.get('location')?.toString() ?? '',
+        thumb: formData.get('car-thumb')?.toString() ?? '',
+        gear: formData.get('car-gear')?.toString() ?? '',
+        finalNumber: formData.get('car-final-number')?.toString() ?? '',
+        color: formData.get('car-color')?.toString() ?? '',
+        exchange: formData.get('car-exchange')?.toString() ?? '',
+        ipva: formData.get('car-ipva')?.toString() ?? '',
+        licenced: formData.get('car-licenced')?.toString() ?? '',
+        gasType: formData.get('gas-type')?.toString() ?? ''
+    };
+};
+
 export async function POST(request: Request) {
-    const formData = await request.formData();
-
-    const carName = formData.get('carName');
-    const carDescription = formData.get('carDescription');
-    const carPrice = formData.get('carPrice');
-    const carYear = formData.get('carYear');
-    const carKm = formData.get('carKm');
-    const carLocation = formData.get('carLocation');
-    const carThumb = formData.get('carThumb') as File;
-
+    const contentType = request.headers.get('content-type');
+    if (!contentType?.includes('multipart/form-data') && !contentType?.includes('application/x-www-form-urlencoded')) {
+        return Response.json({ message: 'Formato inválido. Use multipart/form-data ou application/x-www-form-urlencoded.' }, { status: 400 });
+    }
     try {
-        const thumbBuffer = await carThumb.arrayBuffer();
+        const formData = await request.formData();
+
+        const carObj: Car = getFormData(formData);
+
+        console.log(carObj);
 
         db.prepare(`
-            INSERT INTO cars (name, description, price, year, km, location, thumb)
-            VALUES (?, ?, ? ,?, ?, ?, ?)
-        `).run(carName, carDescription, carPrice, carYear, carKm, carLocation, Buffer.from(thumbBuffer));
+            INSERT INTO cars (
+                name,
+                description,
+                price,
+                year,
+                km,
+                location,
+                thumb,
+                gear,
+                finalNumber,
+                color,
+                exchange,
+                ipva,
+                licenced,
+                gasType
+            )
+            VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+        `).run(
+            carObj.name,
+            carObj.description,
+            carObj.price,
+            carObj.year,
+            carObj.km,
+            carObj.location,
+            carObj.thumb,
+            carObj.gear,
+            carObj.finalNumber,
+            carObj.color,
+            carObj.exchange,
+            carObj.ipva,
+            carObj.licenced,
+            carObj.gasType
+        );
 
         return Response.json({ message: 'Carro adicionado com sucesso.' }, { status: 200 });
-    }
-
-    catch (error) {
-        if (error instanceof Error) {
-            console.log(error.message);
-        }
-
-        return Response.json({ message: 'Erro ao salvar os dados no banco' }, { status: 500 });
-
+    } catch (error) {
+        console.log(error);
+        return Response.json({ message: 'Erro ao salvar os dados no banco.' }, { status: 500 });
     }
 }
